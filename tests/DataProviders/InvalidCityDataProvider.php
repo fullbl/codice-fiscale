@@ -3,7 +3,6 @@
 
 namespace IvanoMatteo\CodiceFiscale\Tests\DataProviders;
 
-
 class InvalidCityDataProvider
 {
     public $firstName = 'Paolo';

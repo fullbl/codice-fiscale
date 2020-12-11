@@ -3,7 +3,6 @@
 
 namespace IvanoMatteo\CodiceFiscale\Tests\DataProviders;
 
-
 class ValidFemaleDataProvider
 {
     public $firstName = 'Paola';

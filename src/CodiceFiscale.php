@@ -99,7 +99,7 @@ class CodiceFiscale
 
     public function isOmocodia(): bool
     {
-        if ($this->omocodia === NULL) {
+        if ($this->omocodia === null) {
             $this->omocodia = static::isOmocodiaStr($this->codiceFiscale);
         }
         return $this->omocodia;
@@ -112,7 +112,7 @@ class CodiceFiscale
      * @param object|array $person expected fields: name, familyName, dateOfBirth, sex, cityCode
      * @param object|array $fieldMap if provided, allow to remap field names
      * @param bool $partial validate only present fields
-     * @return false|array ok: null, error: array with names of fields that don't match
+     * @return null|array ok: null, error: array with names of fields that don't match
      */
     public function validate($person, $fieldMap = null, bool $partial = false): ?array
     {
@@ -209,7 +209,7 @@ class CodiceFiscale
      */
     public function getSex(): string
     {
-        if ($this->sex === NULL) {
+        if ($this->sex === null) {
             $day = substr($this->getBaseVariation(), 9, 2);
 
             if (intval($day) > 40) {
@@ -245,7 +245,7 @@ class CodiceFiscale
      */
     public function getDateOfBirthRaw(): object
     {
-        if ($this->dateOfBirth === NULL) {
+        if ($this->dateOfBirth === null) {
             $this->dateOfBirth = static::extractDateOfBirthRaw($this->codiceFiscale);
         }
         return $this->dateOfBirth;
@@ -281,11 +281,11 @@ class CodiceFiscale
      * XXXXXX00X00X011X
      * XXXXXX00X00X100X
      * ......
-     * @param int $num the index of variation,
-     * @return array if $num === null then: all 127 possible "omocodia" variations else: the requested variation
+     * @param int|null $num the index of variation,
+     * @return array|string if $num === null then: all 127 possible "omocodia" variations else: the requested variation
      * @throws CodicefiscaleException
      */
-    public function generateVariations(int $num): array
+    public function generateVariations(?int $num = null)
     {
         if ($num < 1 || $num > 127) {
             throw new CodicefiscaleException('variation-not-exists', compact('num'));
@@ -378,8 +378,7 @@ class CodiceFiscale
 
         if (in_array($month, [11, 4, 6, 9])) {
             $max_days = 30;
-        } else if ($month == 2) {
-
+        } elseif ($month == 2) {
             if ($century) {
                 if (static::isLeapYear($century + $year)) {
                     $max_days = 29;
@@ -445,7 +444,7 @@ class CodiceFiscale
         $monthIndex = strpos(static::$monthMap, $month);
 
         if ($day >= 40) { // in women
-            $day = '' . ($day - 40);
+            $day = (string)((int)$day - 40);
         }
         $month = $monthIndex + 1;
         $month = str_pad($month, 2, '0', STR_PAD_LEFT);
@@ -540,13 +539,13 @@ class CodiceFiscale
         $dt = null;
         if ($date instanceof DateTime) {
             $dt = $date;
-        } else if (is_string($date) && !static::isIntStr($date)) {
+        } elseif (is_string($date) && !static::isIntStr($date)) {
             try {
                 $dt = new DateTime($date);
             } catch (\Exception $e) {
                 throw new CodicefiscaleException('date-parse-failed', compact('date'));
             }
-        } else if (is_int($date) || static::isIntStr($date)) {
+        } elseif (is_int($date) || static::isIntStr($date)) {
             $dt = new DateTime();
             $dt->setTimestamp($date);
         }
@@ -581,7 +580,6 @@ class CodiceFiscale
      */
     private static function _calculate(string $name, string $familyName, string $dateOfBirth, string $sex, string $cityCode): string
     {
-
         $cityCode = strtoupper(trim($cityCode));
         if (!preg_match(static::$regex_city_code, $cityCode)) {
             throw new CodicefiscaleException('wrong-city-code-format');
@@ -681,11 +679,14 @@ class CodiceFiscale
 
         $sex = strtoupper(trim($sex));
         if ($sex === 'F') {
-            $day += 40;
-        } else if ($sex !== 'M') {
+            $day = (string)((int)$day + 40);
+        } elseif ($sex !== 'M') {
             throw new CodicefiscaleException("sex-wrong-format");
         }
-        return str_pad($year, 2, '0', STR_PAD_LEFT) . static::$monthMap[$month - 1] . str_pad($day, 2, '0', STR_PAD_LEFT);
+        return
+            str_pad($year, 2, '0', STR_PAD_LEFT) .
+            static::$monthMap[(int)$month - 1] .
+            str_pad($day, 2, '0', STR_PAD_LEFT);
     }
 
 
@@ -702,7 +703,7 @@ class CodiceFiscale
         if (empty($c) || strlen($c) !== 1) {
             throw new CodicefiscaleException("bad-character-format", ['character' => $c]);
         }
-        return strpos(static::$vowels, $c) !== FALSE;
+        return strpos(static::$vowels, $c) !== false;
     }
 
     private static function convertSpecialChars(string $str): string
@@ -768,7 +769,8 @@ class CodiceFiscale
     private static string $alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static string $monthMap = "ABCDEHLMPRST";
     private static string $vowels = "AEIOU";
-    private static string $specialChars;
+    /** @var string[] */
+    private static array $specialChars;
 
     /** @var string[] */
     private static array $specialCharsReplace = [

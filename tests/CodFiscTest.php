@@ -3,9 +3,7 @@
 namespace IvanoMatteo\CodiceFiscale\Tests;
 
 use IvanoMatteo\CodiceFiscale\CodiceFiscale;
-use IvanoMatteo\CodiceFiscale\CodicefiscaleException;
 use Orchestra\Testbench\TestCase;
-
 
 class CodFiscTest extends TestCase
 {
@@ -42,7 +40,7 @@ class CodFiscTest extends TestCase
 
         echo "Cofice Fiscale: $cf\n\n";
 
-        echo "variazione[7]: " . $cf->generateVariations(7) . "\n";
+        echo "variazione[7]: " . (string)$cf->generateVariations(7) . "\n";
 
         $variazioni = $cf->generateVariations();
         print_r($variazioni);
@@ -59,19 +57,16 @@ class CodFiscTest extends TestCase
             $this->assertTrue($c->matchSex($sex));
 
             $this->assertTrue(null === $c->validate((object) compact('name', 'familyName', 'dateOfBirth', 'cityCode', 'sex')));
-            $this->assertTrue(null === $c->validate($person,$fieldMap));
+            $this->assertTrue(null === $c->validate($person, $fieldMap));
 
             //partial validation
-            $this->assertTrue(null === $c->validate(compact('name',  'dateOfBirth', 'cityCode'),null,true));
-            $this->assertTrue(null !== $c->validate(['name' => 'Mario', 'cityCode'=> 'Z000'],null,true));
+            $this->assertTrue(null === $c->validate(compact('name', 'dateOfBirth', 'cityCode'), null, true));
+            $this->assertTrue(null !== $c->validate(['name' => 'Mario', 'cityCode'=> 'Z000'], null, true));
 
             $this->assertTrue($c->getCityCode() === $cityCode);
             $this->assertTrue($c->getSex() === $sex);
             $this->assertTrue($c->getDateOfBirth(1900)->format('Y-m-d') === $dateOfBirth);
         }
-
-
-        $this->assertTrue($c->getDateOfBirth(1900)->format('Y-m-d') === $dateOfBirth);
 
 
         $cfStr = 'RSSMRA81B29H501B';
@@ -104,7 +99,6 @@ class CodFiscTest extends TestCase
         $query = $conn->query("SELECT codiceFiscale FROM " . $cfg['table']);
 
         foreach ($query as $row) {
-
             if (!empty($row['codiceFiscale'])) {
                 try {
                     $c = CodiceFiscale::parse($row['codiceFiscale']);

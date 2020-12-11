@@ -2,10 +2,9 @@
 
 namespace IvanoMatteo\CodiceFiscale;
 
-
 class CodicefiscaleException extends \Exception
 {
-    static $errMsgs = [
+    public static $errMsgs = [
         'invalid-format' => 'Invalid Format',
         'dob-not-match' => 'Date of birth do not match',
         'cdigit-not-match' => 'Control digit do not match',
@@ -21,7 +20,7 @@ class CodicefiscaleException extends \Exception
     protected $messageCode;
     protected $context;
 
-    function __construct($message = "", array $context = null, $code = 0, $previous = null)
+    public function __construct($message = "", array $context = null, $code = 0, $previous = null)
     {
         $msg = static::$errMsgs[$message] ?? $message;
 
@@ -34,12 +33,12 @@ class CodicefiscaleException extends \Exception
         $this->messageCode = isset(static::$errMsgs[$message]) ? $message : null;
     }
 
-    function getContext()
+    public function getContext()
     {
         return $this->context;
     }
 
-    function getMessageCode()
+    public function getMessageCode()
     {
         return $this->messageCode;
     }
