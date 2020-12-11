@@ -13,20 +13,12 @@ use DateTime;
  */
 class CodiceFiscale
 {
-    /** @var bool */
-    private $omocodia;
-
-    /** @var string */
-    private $codiceFiscale;
-
-    /** @var string */
-    private $codiceFiscaleBase;
-
+    private bool $omocodia;
+    private string $codiceFiscale;
+    private string $codiceFiscaleBase;
+    private string $sex;
     /** @var object  {"day":"dd","month":"mm","year":"yy"} */
-    private $dateOfBirth;
-
-    /** @var string */
-    private $sex;
+    private object $dateOfBirth;
 
     /** private constructor, use static methods to obtain an instance of this class */
     private function __construct()
@@ -34,17 +26,14 @@ class CodiceFiscale
     }
 
     /**
-     * @param string $codfisc the fiscal code
      * @param string|int $century the year  4 or 2 digits - the last 2 digits will be replaced with 00. if < 100 will be multiplied by 100
      * @return CodiceFiscale
      * @throws CodicefiscaleException
      */
-    public static function parse($codfisc = null, $century = null)
+    public static function parse(string $codfisc, $century = null): self
     {
         $cod = new CodiceFiscale();
-        if ($codfisc) {
-            $cod->codiceFiscale = strtoupper(trim($codfisc));
-        }
+        $cod->codiceFiscale = strtoupper(trim($codfisc));
         if (!static::strMatchFormat($cod->codiceFiscale)) {
             throw new CodicefiscaleException('invalid-format');
         }
@@ -69,21 +58,22 @@ class CodiceFiscale
      *
      * calculate the fiscal code using person data, (note: is not possible to determine by the data if an "omocodia" is present)
      */
-    public static function calculate($name, $familyName, $dateOfBirth, $sex, $cityCode)
+    public static function calculate(string $name, string $familyName, string $dateOfBirth, string $sex, string $cityCode): self
     {
         $c = new CodiceFiscale();
         $c->codiceFiscale = static::_calculate($name, $familyName, $dateOfBirth, $sex, $cityCode);
+
         return $c;
     }
 
     /**
-     * @param object|array $person expected fields: name, familyName, dateOfBirth, sex, cityCode
+     * @param object|array{name:string,familyName:string,dateOfBirth:string,sex:string,cityCode:string} $person expected fields: name, familyName, dateOfBirth, sex, cityCode
      * @param object|array $fieldMap if provided, allow to remap field names
      * @return CodiceFiscale
      * @throws CodicefiscaleException
      * @see calculate
      */
-    public static function calculateObj($person, $fieldMap = null)
+    public static function calculateObj($person, $fieldMap = null): self
     {
         if (is_array($person)) {
             $person = (object) $person;
@@ -107,10 +97,7 @@ class CodiceFiscale
     // methods
     //#####################################################
 
-    /**
-     * @return bool determine if the fiscal code is "omocodia"
-     */
-    public function isOmocodia()
+    public function isOmocodia(): bool
     {
         if ($this->omocodia === NULL) {
             $this->omocodia = static::isOmocodiaStr($this->codiceFiscale);
@@ -127,7 +114,7 @@ class CodiceFiscale
      * @param bool $partial validate only present fields
      * @return false|array ok: null, error: array with names of fields that don't match
      */
-    public function validate($person, $fieldMap = null, $partial = false)
+    public function validate($person, $fieldMap = null, bool $partial = false): ?array
     {
         if (is_array($person)) {
             $person = (object) $person;
@@ -168,22 +155,14 @@ class CodiceFiscale
         return $errs;
     }
 
-    /**
-     * @param string $name
-     * @return bool
-     */
-    public function matchName($name)
+    public function matchName(string $name): bool
     {
         $nm = static::processName($name);
         $nm2 = substr($this->codiceFiscale, 3, 3);
         return $nm === $nm2;
     }
 
-    /**
-     * @param string $familyName
-     * @return bool
-     */
-    public function matchFamilyName($familyName)
+    public function matchFamilyName(string $familyName): bool
     {
         $fn = static::processFamilyName($familyName);
         $fn2 = substr($this->codiceFiscale, 0, 3);
@@ -192,10 +171,9 @@ class CodiceFiscale
 
     /**
      * @param DateTime|string|int|object $dateOfBirth @see self::parseDate()
-     * @return bool
      * @throws CodicefiscaleException
      */
-    public function matchDateOfBirth($dateOfBirth)
+    public function matchDateOfBirth($dateOfBirth): bool
     {
         $input = static::parseDate($dateOfBirth);
         $d = $this->getDateOfBirthRaw();
@@ -206,9 +184,8 @@ class CodiceFiscale
 
     /**
      * @param string $sex 'M' or 'F'
-     * @return bool
      */
-    public function matchSex($sex)
+    public function matchSex(string $sex): bool
     {
         $s = strtoupper(trim($sex));
         $s1 = $this->getSex();
@@ -217,9 +194,8 @@ class CodiceFiscale
 
     /**
      * @param string $cityCode - the code of the city: "codice catastale" also known as "codice belfiore"
-     * @return bool
      */
-    public function matchCityCode($cityCode)
+    public function matchCityCode(string $cityCode): bool
     {
         $cc = strtoupper(trim($cityCode));
         $cc2 = $this->getCityCode();
@@ -229,9 +205,9 @@ class CodiceFiscale
 
 
     /**
-     * @return string 'M' or 'F'
+     * @phpstan-return 'M'|'F'
      */
-    public function getSex()
+    public function getSex(): string
     {
         if ($this->sex === NULL) {
             $day = substr($this->getBaseVariation(), 9, 2);
@@ -250,9 +226,8 @@ class CodiceFiscale
     /**
      * extract the date of birth, according to the century
      * @param string|int $century the year  4 or 2 digits - the last 2 digits will be replaced with 00. if < 100 will be multiplied by 100
-     * @return DateTime
      */
-    public function getDateOfBirth($century)
+    public function getDateOfBirth($century): DateTime
     {
         $century = static::century4digits($century);
 
@@ -268,7 +243,7 @@ class CodiceFiscale
      * extract raw date of birth
      * @return object  {"day":"dd","month":"mm","year":"yy"}
      */
-    public function getDateOfBirthRaw()
+    public function getDateOfBirthRaw(): object
     {
         if ($this->dateOfBirth === NULL) {
             $this->dateOfBirth = static::extractDateOfBirthRaw($this->codiceFiscale);
@@ -279,7 +254,7 @@ class CodiceFiscale
     /**
      * @return string - the code of the city: "codice catastale" also known as "codice belfiore"
      */
-    public function getCityCode()
+    public function getCityCode(): string
     {
         return substr($this->getBaseVariation(), 11, 4);
     }
@@ -288,7 +263,7 @@ class CodiceFiscale
     /**
      * @return string the fiscal code without "omocodia" variations
      */
-    public function getBaseVariation()
+    public function getBaseVariation(): string
     {
         if (!$this->isOmocodia()) {
             return $this->codiceFiscale;
@@ -306,16 +281,14 @@ class CodiceFiscale
      * XXXXXX00X00X011X
      * XXXXXX00X00X100X
      * ......
-     * @param integer $num the index of variation,
+     * @param int $num the index of variation,
      * @return array if $num === null then: all 127 possible "omocodia" variations else: the requested variation
      * @throws CodicefiscaleException
      */
-    public function generateVariations($num = null)
+    public function generateVariations(int $num): array
     {
-        if (isset($num)) {
-            if ($num < 1 || $num > 127) {
-                throw new CodicefiscaleException('variation-not-exists', compact('num'));
-            }
+        if ($num < 1 || $num > 127) {
+            throw new CodicefiscaleException('variation-not-exists', compact('num'));
         }
         $ind = array_reverse(static::$omocodieIndexes);
         $map = array_flip(static::$omocodiaMap);
@@ -343,13 +316,12 @@ class CodiceFiscale
     }
 
     /**
-     * @param int $minAge
-     * @param DateTime|string|int|object $currDateTime @see self::parseDate()
+     * @param DateTime|string|int|object|null $currDateTime @see self::parseDate()
      *
      * @return DateTime return the most probable date of birth,
      * basing on the current date and the minimum age specified
      */
-    public function getProbableDateOfBirth($minAge = null, $currDateTime = null)
+    public function getProbableDateOfBirth(?int $minAge = null, $currDateTime = null)
     {
         $arr = $this->getDateOfBirthRaw();
 
@@ -360,9 +332,7 @@ class CodiceFiscale
         return static::calculateProbableDateOfBirth($yy, $mm, $dd, $minAge, $currDateTime);
     }
 
-
-    /** @return string */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->codiceFiscale;
     }
@@ -377,7 +347,7 @@ class CodiceFiscale
      * @param  string $cod the fiscal code - must be an uppercase string
      * @return bool determine if the fiscal code is "omocodia"
      */
-    public static function isOmocodiaStr($cod)
+    public static function isOmocodiaStr(string $cod): bool
     {
         $ind = static::$omocodieIndexes;
         foreach ($ind as $i) {
@@ -392,10 +362,9 @@ class CodiceFiscale
     /**
      * check if the date of birth is coherent with te code
      * @param  string $cod the fiscal code - must be an uppercase string
-     * @param string|int $century the year  4 or 2 digits - the last 2 digits will be replaced with 00. if < 100 will be multiplied by 100
-     * @return bool
+     * @param string|int|null $century the year  4 or 2 digits - the last 2 digits will be replaced with 00. if < 100 will be multiplied by 100
      */
-    public static function isDateOfBirthCorrect($cod, $century = null)
+    public static function isDateOfBirthCorrect(string $cod, $century = null): bool
     {
         if (isset($century)) {
             $century = static::century4digits($century);
@@ -436,7 +405,7 @@ class CodiceFiscale
      * @param  string $cod the fiscal code - must be an uppercase string
      * @return bool
      */
-    public static function strMatchFormat($cod)
+    public static function strMatchFormat(string $cod): bool
     {
         return (bool) preg_match(static::$regex_format, $cod);
     }
@@ -448,7 +417,7 @@ class CodiceFiscale
      * @return bool
      * @throws CodicefiscaleException
      */
-    public static function strMatchControlDigit($cod)
+    public static function strMatchControlDigit(string $cod): bool
     {
         $len = strlen($cod);
         if ($len != 16) {
@@ -465,7 +434,7 @@ class CodiceFiscale
      * @param  string $cod the fiscal code - must be an uppercase string
      * @return object  {"day":"dd","month":"mm","year":"yy"}
      */
-    public static function extractDateOfBirthRaw($cod)
+    public static function extractDateOfBirthRaw(string $cod): object
     {
         $cfbase = static::calculateBaseVariation($cod);
 
@@ -490,7 +459,7 @@ class CodiceFiscale
      * @param  string $cf the fiscal code - must be an uppercase string
      * @return string the fiscal code without "omocodia" variations
      */
-    public static function calculateBaseVariation($cf)
+    public static function calculateBaseVariation(string $cf): string
     {
         $ind = static::$omocodieIndexes;
         foreach ($ind as $i) {
@@ -506,14 +475,13 @@ class CodiceFiscale
      * @param string $yy year 2 digits
      * @param string $mm month 2 digits
      * @param string $dd day 2 digits
-     * @param int $minAge
-     * @param DateTime|string|int|object $currDateTime @see self::parseDate()
+     * @param DateTime|string|int|object|null $currDateTime @see self::parseDate()
      *
      * @return DateTime return the most probable date of birth,
      * basing on the current date and the minimum age specified
      * @throws CodicefiscaleException
      */
-    public static function calculateProbableDateOfBirth($yy, $mm, $dd, $minAge = null, $currDateTime = null)
+    public static function calculateProbableDateOfBirth(string $yy, string $mm, string $dd, ?int $minAge = null, $currDateTime = null): DateTime
     {
         if (!isset($currDateTime)) {
             $currDateTime = new DateTime();
@@ -548,7 +516,7 @@ class CodiceFiscale
      * @param string|int $century the year  4 or 2 digits - the last 2 digits will be replaced with 00. if < 100 will be multiplied by 100
      * @return int the century for example: 1980 => 1900, 19=>1900,  2020 => 2000, 20 => 2000
      */
-    private static function century4digits($century)
+    private static function century4digits($century): int
     {
         $res = floor(((int) $century) / 100) * 100;
         if ($res < 100) {
@@ -559,7 +527,7 @@ class CodiceFiscale
 
 
     /**
-     * @param DateTime|string|int|object $date
+     * @param DateTime|string|int|object|null $date
      * accept various formats
      * - DateTime
      * - string: strtotime() format
@@ -567,7 +535,7 @@ class CodiceFiscale
      * @return DateTime
      * @throws CodicefiscaleException
      */
-    private static function parseDate($date)
+    private static function parseDate($date): DateTime
     {
         $dt = null;
         if ($date instanceof DateTime) {
@@ -594,12 +562,8 @@ class CodiceFiscale
      * @param string $input
      * @return bool
      */
-    private static function isIntStr($input)
+    private static function isIntStr(string $input): bool
     {
-        if (!is_string($input)) {
-            return false;
-        }
-
         if ($input[0] == '-') {
             return ctype_digit(substr($input, 1));
         }
@@ -607,25 +571,15 @@ class CodiceFiscale
     }
 
 
-    /**
-     * @param int $year
-     * @return bool
-     */
-    private static function isLeapYear($year)
+    private static function isLeapYear(int $year): bool
     {
         return ((($year % 4) == 0) && ((($year % 100) != 0) || (($year % 400) == 0)));
     }
 
     /**
-     * @param string $name
-     * @param string $familyName
-     * @param string $dateOfBirth
-     * @param string $sex
-     * @param string $cityCode
-     * @return string
      * @throws CodicefiscaleException
      */
-    private static function _calculate($name, $familyName, $dateOfBirth, $sex, $cityCode)
+    private static function _calculate(string $name, string $familyName, string $dateOfBirth, string $sex, string $cityCode): string
     {
 
         $cityCode = strtoupper(trim($cityCode));
@@ -640,11 +594,9 @@ class CodiceFiscale
     }
 
     /**
-     * @param string $name
-     * @return string
      * @throws CodicefiscaleException
      */
-    private static function processName($name)
+    private static function processName(string $name): string
     {
         $nm = static::preProcessNames($name);
 
@@ -672,24 +624,20 @@ class CodiceFiscale
     }
 
     /**
-     * @param string $familyName
-     * @return string
      * @throws CodicefiscaleException
      */
-    private static function processFamilyName($familyName)
+    private static function processFamilyName(string $familyName): string
     {
         return static::processNames(static::preProcessNames($familyName));
     }
 
     /**
-     * @param string $name
-     * @return string
      * @throws CodicefiscaleException
      *
      * family name processing
      * used also as first step for first name processing
      */
-    private static function processNames($name)
+    private static function processNames(string $name): string
     {
         $l = strlen($name);
         if ($l < 2) {
@@ -714,24 +662,18 @@ class CodiceFiscale
     }
 
     /**
-     * @param string $data_str
-     * @param string $sesso
-     * @return string
      * @throws CodicefiscaleException
      */
-    private static function processDateOfBirth($data_str, $sesso)
+    private static function processDateOfBirth(string $data_str, string $sesso): string
     {
         $dt = static::parseDate($data_str);
         return static::processDateOfBirthDT($dt, $sesso);
     }
 
     /**
-     * @param DateTime $datetime
-     * @param string $sex
-     * @return string
      * @throws CodicefiscaleException
      */
-    private static function processDateOfBirthDT($datetime, $sex)
+    private static function processDateOfBirthDT(DateTime $datetime, string $sex): string
     {
         $year = $datetime->format('y');
         $month = $datetime->format('n');
@@ -747,21 +689,15 @@ class CodiceFiscale
     }
 
 
-    /**
-     * @param string $str
-     * @return string|string[]|null
-     */
-    private static function preProcessNames($str)
+    private static function preProcessNames(string $str): ?string
     {
         return preg_replace('/[^A-Z]/', '', strtoupper(static::convertSpecialChars($str)));
     }
 
     /**
-     * @param string $c
-     * @return bool
      * @throws CodicefiscaleException
      */
-    private static function isVowel($c)
+    private static function isVowel(string $c): bool
     {
         if (empty($c) || strlen($c) !== 1) {
             throw new CodicefiscaleException("bad-character-format", ['character' => $c]);
@@ -769,21 +705,15 @@ class CodiceFiscale
         return strpos(static::$vowels, $c) !== FALSE;
     }
 
-    /**
-     * @param string $str
-     * @return string
-     */
-    private static function convertSpecialChars($str)
+    private static function convertSpecialChars(string $str): string
     {
         return str_replace(static::$specialChars, static::$specialCharsReplace, $str);
     }
 
     /**
-     * @param string $cf
-     * @return string
      * @throws CodicefiscaleException
      */
-    public static function calcControlDigit($cf)
+    public static function calcControlDigit(string $cf): string
     {
         $sum = 0;
 
@@ -833,21 +763,15 @@ class CodiceFiscale
         );
     }
 
-    /** @var string */
-    private static $regex_city_code = '/^[A-Z]\\d{3}$/';
-    /** @var string */
-    private static $regex_format = '/^[A-Z]{6}[LMNPQRSTUV0-9]{2}[ABCDEHLMPRST][LMNPQRSTUV0-9]{2}[A-Z][LMNPQRSTUV0-9]{3}[A-Z]$/';
-    /** @var string */
-    private static $alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    /** @var string */
-    private static $monthMap = "ABCDEHLMPRST";
-    /** @var string */
-    private static $vowels = "AEIOU";
-    /** @var */
-    private static $specialChars;
+    private static string $regex_city_code = '/^[A-Z]\\d{3}$/';
+    private static string $regex_format = '/^[A-Z]{6}[LMNPQRSTUV0-9]{2}[ABCDEHLMPRST][LMNPQRSTUV0-9]{2}[A-Z][LMNPQRSTUV0-9]{3}[A-Z]$/';
+    private static string $alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static string $monthMap = "ABCDEHLMPRST";
+    private static string $vowels = "AEIOU";
+    private static string $specialChars;
 
     /** @var string[] */
-    private static $specialCharsReplace = [
+    private static array $specialCharsReplace = [
         'AE', 'AE', 'AE', 'AE', 'OE', 'OE', 'OE', 'OE', 'UE', 'UE', 'SS',
         'A', 'A', 'A', 'A', 'C', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'N', 'O', 'O', 'O', 'O',
         'U', 'U', 'U', 'Y', 'Y', 'C', 'S', 'Z', 'A', 'A', 'A', 'A', 'C', 'E', 'E', 'E', 'E', 'I',
@@ -855,23 +779,23 @@ class CodiceFiscale
     ];
 
     /** @var int[] */
-    private static $omocodieIndexes = [6, 7, 9, 10, 12, 13, 14];
+    private static array $omocodieIndexes = [6, 7, 9, 10, 12, 13, 14];
 
-    /** @var int[] */
-    private static $omocodiaMap = [
+    /** @var array<string,int> */
+    private static array $omocodiaMap = [
         'L' => 0, 'M' => 1, 'N' => 2, 'P' => 3, 'Q' => 4, 'R' => 5, 'S' => 6, 'T' => 7, 'U' => 8, 'V' => 9
     ];
-    /** @var int[] */
-    private static $even_codes = [
+    /** @var array<string,int> */
+    private static array $even_codes = [
         '0' => 0, '1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9, 'A' => 0, 'B' => 1, 'C' => 2, 'D' => 3, 'E' => 4, 'F' => 5, 'G' => 6, 'H' => 7, 'I' => 8, 'J' => 9, 'K' => 10, 'L' => 11, 'M' => 12, 'N' => 13, 'O' => 14, 'P' => 15, 'Q' => 16, 'R' => 17, 'S' => 18, 'T' => 19, 'U' => 20, 'V' => 21, 'W' => 22, 'X' => 23, 'Y' => 24, 'Z' => 25
     ];
-    /** @var int[] */
-    private static $odd_codes = [
+    /** @var array<string,int> */
+    private static array $odd_codes = [
         '0' => 1, '1' => 0, '2' => 5, '3' => 7, '4' => 9, '5' => 13, '6' => 15, '7' => 17, '8' => 19, '9' => 21, 'A' => 1, 'B' => 0, 'C' => 5, 'D' => 7, 'E' => 9, 'F' => 13, 'G' => 15, 'H' => 17, 'I' => 19, 'J' => 21, 'K' => 2, 'L' => 4, 'M' => 18, 'N' => 20, 'O' => 11, 'P' => 3, 'Q' => 6, 'R' => 8, 'S' => 12, 'T' => 14, 'U' => 16, 'V' => 10, 'W' => 22, 'X' => 25, 'Y' => 24, 'Z' => 23
     ];
 }
 
 /**
- * static initializzation
+ * static initialization
  */
 CodiceFiscale::init();
