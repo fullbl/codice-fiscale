@@ -20,7 +20,9 @@
     "require": {
         "php": ">=7.4",
         "ext-ctype": "*",
-        "ext-json": "*"
+        "ext-json": "*",
+        "phpstan/phpstan": "^0.12.59",
+        "phpstan/phpstan-phpunit": "^0.12.16"
     },
     "require-dev": {
         "orchestra/testbench": "^4.0",
